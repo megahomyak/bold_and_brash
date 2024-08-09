@@ -14,17 +14,24 @@ function printN(n) {
     };
 }
 
-let p = printN(50);
+let p = printN(500);
 
 function check(xi, yi) { // xi and yi are [0; 1)
-    let lineIndex = Math.floor(lines.length * yi);
-    let line = lines[lineIndex];
-    let charIndex = Math.floor(line.length * xi);
-    let char = line[charIndex];
-    let cx = xi / line.length; // "Character X"
-    let cy = yi / lines.length; // "Character Y"
-    p.print(cx, cy);
-    if (cx > 0.5 && cy > 0.5) {
+    function getFractionalPart(f) {
+        return f % 1;
+    }
+
+    function getInner(container, measure) {
+        let containerMeasure = container.length * measure;
+        let itemIndex = Math.floor(containerMeasure);
+        let item = container[itemIndex];
+        let scaledMeasure = getFractionalPart(containerMeasure);
+        return [scaledMeasure, item];
+    }
+    let [cy, line] = getInner(lines, yi);
+    let [cx, char] = getInner(line, xi);
+    p.print(cx, cy, xi, yi);
+    if (cx < 0.5 && cy < 0.5) {
         return true;
     }
     return false;
