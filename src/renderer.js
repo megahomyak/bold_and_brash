@@ -14,11 +14,13 @@ function printN(n) {
     };
 }
 
-let p = printN(500);
-
 function check(xi, yi) { // xi and yi are [0; 1)
     function getFractionalPart(f) {
         return f % 1;
+    }
+
+    function between(f, smallerBound, greaterBound) {
+        return f >= smallerBound && f <= greaterBound;
     }
 
     function getInner(container, measure) {
@@ -30,9 +32,33 @@ function check(xi, yi) { // xi and yi are [0; 1)
     }
     let [cy, line] = getInner(lines, yi);
     let [cx, char] = getInner(line, xi);
-    p.print(cx, cy, xi, yi);
-    if (cx < 0.5 && cy < 0.5) {
-        return true;
+
+    function rect(x1, y1, x2, y2) {
+        return between(cx, x1, x2) && between(cy, y1, y2);
+    }
+
+    function distance(x1, y1, x2, y2) {
+        let xl = Math.abs(x1 - x2);
+        let yl = Math.abs(y1 - y2);
+        let dist = Math.hypot(xl, yl);
+        return dist;
+    }
+
+    function circle(x, y, r) {
+        return distance(cx, cy, x, y) <= r;
+    }
+
+    function slopeUp(x1, y1, x2, y2) {
+        return (between(cx, x1, x2) && between(cy, y1, y2)) && ((x2 - cx) * (x2 - x1 / y2 - y1) <= cy - y1);
+    }
+
+    {
+        let dot = rect(0.4, 0.8, 0.6, 1.0);
+        let mainCircle = circle(0.5, 0.35, 0.35);
+        let circleCutout = circle(0.5, 0.35, 0.15);
+        let squareCutout = rect(0.0, 0.35, 0.5, 0.7);
+        let slope = slopeUp(0.0, 0.0, 1.0, 0.5);
+        return dot || (mainCircle && !circleCutout && !squareCutout) || slope;
     }
     return false;
 }
