@@ -4,8 +4,8 @@ let ctx = canvas.getContext("2d");
 // any number in this function is in [0; 1)
 function check() {
     // beginning's values shouldn't be greater than the corresponding values of end
-    function compress({ beginning, end, renderer }) {
-        return ({x, y}) => {
+    function compressed({ beginning, end, renderer }) {
+        return ({ x, y }) => {
             return (
                 x >= beginning.x && x < end.x
                 && y >= beginning.y && y < end.y
@@ -26,21 +26,37 @@ function check() {
         };
     }
 
-    function letter(characterCode) {
+    function letter({ characterCode }) {
         return {
 
         }[characterCode] || (({ x, y }) => {
             // Rendering a question mark
-
+            return circle()({ x, y });
         });
     }
 
-    function line(string) {
-        let gap = 0.2 / string.length;
-        return compress({  });
+    function partitionedHorizontally({ partAmount, renderer }) {
+        return ({ x, y }) => {
+            let partIndex = Math.floor(x * partAmount);
+            let partLength = 1 / partAmount;
+            let partBias = partLength * partIndex;
+            return renderer({ partIndex })({ x: (x - partBias) * partAmount, y });
+        };
     }
 
-    return compress({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 1 / 3 }, renderer: circle() });
+    function line({ content }) {
+        let characterGap = 0.2;
+        let rightmostGap = characterGap / content.length;
+        return compressed({
+            beginning: { x: 0, y: 0 }, end: { x: 1 - rightmostGap, y: 1 }, renderer: partitionedHorizontally({
+                partAmount: content.length, renderer: ({ partIndex }) => {
+                    return compressed({ beginning: { x: characterGap, y: 0 }, end: { x: 1, y: 1 }, renderer: letter({ characterCode: content[partIndex] }) });
+                }
+            })
+        });
+    }
+
+    return line({ content: "BOLD" });
 }
 
 function render() {
