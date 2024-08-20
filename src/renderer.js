@@ -60,8 +60,8 @@ function render() {
     }
 
     { // Drawing every pixel
-        let minX = +inf;
-        let minY = +inf;
+        let minX = Infinity;
+        let minY = Infinity;
         let maxX = 0;
         let maxY = 0;
         for (let x = 0; x < widthPx; ++x) {
@@ -85,7 +85,7 @@ function render() {
                 }
             }
         }
-        debug(maxX, maxY);
+        debug(minX, minY, maxX, maxY);
     }
 }
 
