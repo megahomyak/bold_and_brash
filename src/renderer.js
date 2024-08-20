@@ -19,7 +19,7 @@ const debug = {
                 }
             },
             print() {
-                console.log(this.min, this.max);
+                debug.print(this.min, this.max);
             }
         }
     }
@@ -72,12 +72,20 @@ const letter = ({ characterCode }) => ({
         renderer: circle(),
         carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
     }),
-    "A": combined(
-        carved({
-            renderer: reversedByX(slope()),
-            carver: positioned({ beginning: { x: 0.2, y: 0.2 }, end: { x: 1, y: 1 }, renderer: reversedByX(slope()) })
-        })
-    ),
+    "A": (() => {
+        let slopeLine = () => carved({
+            renderer: slope(),
+            carver: positioned({ beginning: { x: 0, y: 1 / 3 }, end: { x: 2 / 3, y: 1 }, renderer: slope() })
+        });
+        return combined(
+            // Right
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: reversedByX(slopeLine()) }),
+            // Left
+            positioned({ beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: slopeLine() }),
+            // Middle connection
+            positioned({ beginning: { x: 0.2, y: 0.6 }, end: { x: 0.8, y: 0.8 }, renderer: filled() })
+        );
+    })(),
 }[characterCode] || questionMark());
 const partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
