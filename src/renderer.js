@@ -13,6 +13,7 @@ function distance(point1, point2) {
 }
 
 let rectangle = () => ({ x: _x, y: _y }) => true;
+// CIRCLE IS BUGGY! CROPPED ON THE RIGHT!
 let circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
 let letter = ({ characterCode }) => ({
 
@@ -23,24 +24,23 @@ let letter = ({ characterCode }) => ({
 let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
     let leftmostGap = partGap / partAmount;
-    let a = coordinate;
     // Shifting the coordinate to after the leftmost gap before doing any processing
     coordinate = leftmostGap + coordinate * (1 - leftmostGap);
     let partIndex = Math.floor(coordinate * partAmount);
     let partLength = 1 / partAmount;
     let partBias = partIndex * partLength;
-    // BUG AFTER THIS COMMENT, EVERYTHING IS CORRECT BEFORE THIS LINE
-    let coordinateInsidePart = (coordinate - partBias) / partLength;
-    if (coordinateInsidePart < partGap) { return false; }
-    let coordinateWithoutPartGap = (coordinateInsidePart - partGap) * (1 + partGap);
-    return renderer({ partIndex, coordinate: coordinateWithoutPartGap });
+    // Getting the coordinate inside the part
+    coordinate = (coordinate - partBias) / partLength;
+    if (coordinate < partGap) { return false; }
+    // Getting the coordinate without part gap
+    coordinate = (coordinate - partGap) * (1 + partGap);
+    return renderer({ partIndex, coordinate });
 };
 let partitionedHorizontally = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: x, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x: coordinate, y }) });
 let partitionedVertically = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: y, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x, y: coordinate }) });
-let line = ({ characters, characterGap }) => partitionedHorizontally({ partAmount: characters.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: characters[partIndex] }) });
-let lines = ({ characters, lineGap, characterGap }) => partitionedVertically({ partAmount: characters.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: characters[partIndex] }) });
-// let canvasImage = lines({ characters: ["BOLD", "AND", "BRASH"], lineGap: 0.2, characterGap: 0.2 });
-let canvasImage = partitionedHorizontally({ partAmount: 4, partGap: 0.2, renderer: ({ partIndex }) => circle() });
+let line = ({ line, characterGap }) => partitionedHorizontally({ partAmount: line.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: line[partIndex] }) });
+let lines = ({ lines, lineGap, characterGap }) => partitionedVertically({ partAmount: lines.length, partGap: lineGap, renderer: ({ partIndex }) => line({ line: lines[partIndex], characterGap }) });
+let canvasImage = lines({ lines: ["BOLD", "AND", "BRASH"], lineGap: 0.2, characterGap: 0.2 });
 
 function render() {
     let widthPx, heightPx;
@@ -60,15 +60,32 @@ function render() {
     }
 
     { // Drawing every pixel
+        let minX = +inf;
+        let minY = +inf;
+        let maxX = 0;
+        let maxY = 0;
         for (let x = 0; x < widthPx; ++x) {
             for (let y = 0; y < heightPx; ++y) {
-                let xUnit = x / widthPx;
-                let yUnit = y / heightPx;
+                let xUnit = x * (1 / (widthPx - 1));
+                let yUnit = y * (1 / (heightPx - 1));
+                if (xUnit > maxX) {
+                    maxX = xUnit;
+                }
+                if (xUnit < minX) {
+                    minX = xUnit;
+                }
+                if (yUnit > maxY) {
+                    maxY = yUnit;
+                }
+                if (yUnit < minY) {
+                    minY = yUnit;
+                }
                 if (canvasImage({ x: xUnit, y: yUnit })) {
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
         }
+        debug(maxX, maxY);
     }
 }
 
