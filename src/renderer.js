@@ -33,7 +33,7 @@ function distance(point1, point2) {
 
 const combined = (...renderers) => coordinates => renderers.map(renderer => renderer(coordinates)).some(result => result);
 const carved = ({ renderer, carver }) => coordinates => renderer(coordinates) && !carver(coordinates);
-// Beginning and end are { x: [0; 1], y: [0; 1] }
+// Beginning and end are { x: number, y: number }
 // Input requirements: beginning.x < end.x; beginning.y < end.y
 const positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
     x >= beginning.x && x <= end.x
@@ -44,8 +44,11 @@ const positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
     })
 );
 const filled = () => ({ x: _x, y: _y }) => true;
-const reversedByX = renderer => ({ x, y }) => renderer({ x: 1 - x, y });
+const withReversedX = renderer => ({ x, y }) => renderer({ x: 1 - x, y });
 const circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
+// Beginning and end are { x: number, y: number }
+// Input requirements: beginning.x < end.x; beginning.y < end.y
+const cropped = ({ beginning, end, renderer }) => ({ x, y }) => renderer({ x: beginning.x + x * (end.x - beginning.x), y: beginning.y + y * (end.y - beginning.y) });
 const questionMark = () => combined(
     // Lower dot
     positioned({ beginning: { x: 0.4, y: 0.825 }, end: { x: 0.6, y: 1 }, renderer: filled() }),
@@ -79,13 +82,30 @@ const letter = ({ characterCode }) => ({
         });
         return combined(
             // Right
-            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: reversedByX(slopeLine()) }),
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: withReversedX(slopeLine()) }),
             // Left
             positioned({ beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: slopeLine() }),
             // Middle connection
             positioned({ beginning: { x: 0.2, y: 0.6 }, end: { x: 0.8, y: 0.8 }, renderer: filled() })
         );
     })(),
+    "D": combined(
+        // Right arch
+        positioned({
+            beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: cropped({
+                beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: carved({
+                    renderer: circle(),
+                    carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
+                })
+            })
+        }),
+        // Left top line
+        positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 0.25 }, renderer: filled() }),
+        // Left bottom line
+        positioned({ beginning: { x: 0, y: 0.75 }, end: { x: 0.5, y: 1 }, renderer: filled() }),
+        // Leftmost connection line
+        positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.25, y: 1 }, renderer: filled() }),
+    ),
 }[characterCode] || questionMark());
 const partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
