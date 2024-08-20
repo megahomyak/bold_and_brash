@@ -106,6 +106,39 @@ const letter = ({ characterCode }) => ({
         // Leftmost connection line
         positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.25, y: 1 }, renderer: filled() }),
     ),
+    "B": (() => {
+        let half = () => combined(
+            // Right arch
+            positioned({
+                beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: cropped({
+                    beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: carved({
+                        renderer: circle(),
+                        carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
+                    })
+                })
+            }),
+            // Left top line
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 0.25 }, renderer: filled() }),
+            // Left bottom line
+            positioned({ beginning: { x: 0, y: 0.75 }, end: { x: 0.5, y: 1 }, renderer: filled() }),
+            // Leftmost connection line
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.25, y: 1 }, renderer: filled() }),
+        );
+        return combined(
+            // Lower
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.5625 }, renderer: half() }),
+            // Higher
+            positioned({ beginning: { x: 0, y: 0.4375 }, end: { x: 1, y: 1 }, renderer: half() }),
+        );
+    })(),
+    "H": combined(
+        // Left line
+        positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.25, y: 1 }, renderer: filled() }),
+        // Right line
+        positioned({ beginning: { x: 0.75, y: 0 }, end: { x: 1, y: 1 }, renderer: filled() }),
+        // Middle line
+        positioned({ beginning: { x: 0, y: 0.4 }, end: { x: 1, y: 0.6 }, renderer: filled() }),
+    ),
 }[characterCode] || questionMark());
 const partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
