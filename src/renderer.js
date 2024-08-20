@@ -12,6 +12,7 @@ function distance(point1, point2) {
     return Math.hypot(point2.x - point1.x, point2.y - point1.y);
 }
 
+let rectangle = () => ({ x: _x, y: _y }) => true;
 let circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
 let letter = ({ characterCode }) => ({
 
@@ -25,17 +26,13 @@ let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     let a = coordinate;
     // Shifting the coordinate to after the leftmost gap before doing any processing
     coordinate = leftmostGap + coordinate * (1 - leftmostGap);
-    // BUG AFTER THIS COMMENT, EVERYTHING IS CORRECT BEFORE THIS LINE
-    let partIndex = Math.floor(coordinate / partAmount);
+    let partIndex = Math.floor(coordinate * partAmount);
     let partLength = 1 / partAmount;
     let partBias = partIndex * partLength;
+    // BUG AFTER THIS COMMENT, EVERYTHING IS CORRECT BEFORE THIS LINE
     let coordinateInsidePart = (coordinate - partBias) / partLength;
     if (coordinateInsidePart < partGap) { return false; }
     let coordinateWithoutPartGap = (coordinateInsidePart - partGap) * (1 + partGap);
-    if (coordinate >= 0.5) {
-        debug(partBias, coordinateInsidePart, coordinateAfterLeftmostGap, partBias, partLength);
-        debug(coordinate, coordinateAfterLeftmostGap, coordinateInsidePart, coordinateWithoutPartGap);
-    }
     return renderer({ partIndex, coordinate: coordinateWithoutPartGap });
 };
 let partitionedHorizontally = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: x, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x: coordinate, y }) });
