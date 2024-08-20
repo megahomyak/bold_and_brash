@@ -3,12 +3,32 @@ let ctx = canvas.getContext("2d");
 
 function debug() {
     console.log(...arguments);
-    throw new Object();
+    throw "debug throw";
+}
+class Accumulator {
+    constructor() {
+        this.min = Infinity;
+        this.max = -Infinity;
+    }
+    accumulate(number) {
+        if (this.max < number) {
+            this.max = number;
+        }
+        if (this.min > number) {
+            this.min = number;
+        }
+    }
+    print() {
+        console.log(this.min, this.max);
+    }
 }
 
-// { x, y } are all in [0; 1)
+let distanceAccum = new Accumulator();
+
+// { x, y } are all in [0; 1]
 
 function distance(point1, point2) {
+    distanceAccum.accumulate(point1.x);
     return Math.hypot(point2.x - point1.x, point2.y - point1.y);
 }
 
@@ -30,6 +50,10 @@ let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     let partLength = 1 / partAmount;
     let partBias = partIndex * partLength;
     // Getting the coordinate inside the part
+    // THIS CONVERSION SHRINKS THE UPPER BOUND
+    if (coordinate >= 0.3) {
+        debug(coordinate, partBias, partLength);
+    }
     coordinate = (coordinate - partBias) / partLength;
     if (coordinate < partGap) { return false; }
     // Getting the coordinate without part gap
@@ -60,32 +84,16 @@ function render() {
     }
 
     { // Drawing every pixel
-        let minX = Infinity;
-        let minY = Infinity;
-        let maxX = 0;
-        let maxY = 0;
         for (let x = 0; x < widthPx; ++x) {
             for (let y = 0; y < heightPx; ++y) {
                 let xUnit = x * (1 / (widthPx - 1));
                 let yUnit = y * (1 / (heightPx - 1));
-                if (xUnit > maxX) {
-                    maxX = xUnit;
-                }
-                if (xUnit < minX) {
-                    minX = xUnit;
-                }
-                if (yUnit > maxY) {
-                    maxY = yUnit;
-                }
-                if (yUnit < minY) {
-                    minY = yUnit;
-                }
                 if (canvasImage({ x: xUnit, y: yUnit })) {
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
         }
-        debug(minX, minY, maxX, maxY);
+        distanceAccum.print();
     }
 }
 
