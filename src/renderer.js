@@ -49,11 +49,11 @@ let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     let partIndex = Math.floor(coordinate * partAmount);
     let partLength = 1 / partAmount;
     let partBias = partIndex * partLength;
-    // Getting the coordinate inside the part
-    // THIS CONVERSION SHRINKS THE UPPER BOUND
     if (coordinate >= 0.3) {
         debug(coordinate, partBias, partLength);
     }
+    // Getting the coordinate inside the part
+    // THIS CONVERSION SHRINKS THE UPPER BOUND
     coordinate = (coordinate - partBias) / partLength;
     if (coordinate < partGap) { return false; }
     // Getting the coordinate without part gap
