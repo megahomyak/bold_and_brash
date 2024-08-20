@@ -43,9 +43,11 @@ const positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
         y: (y - beginning.y) / (end.y - beginning.y),
     })
 );
-const filled = () => ({ x: _x, y: _y }) => true;
 const withReversedX = renderer => ({ x, y }) => renderer({ x: 1 - x, y });
+const withReversedY = renderer => ({ x, y }) => renderer({ x, y: 1 - y });
+const filled = () => ({ x: _x, y: _y }) => true;
 const circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
+const slope = ({ thickness }) => ({ x, y }) => x < y && y - x <= thickness;
 // Beginning and end are { x: number, y: number }
 // Input requirements: beginning.x < end.x; beginning.y < end.y
 const cropped = ({ beginning, end, renderer }) => ({ x, y }) => renderer({ x: beginning.x + x * (end.x - beginning.x), y: beginning.y + y * (end.y - beginning.y) });
@@ -65,30 +67,23 @@ const questionMark = () => combined(
     // Circle down stem
     positioned({ beginning: { x: 0.4, y: 0.45 }, end: { x: 0.6, y: 0.7 }, renderer: filled() }),
 );
-const slope = () => ({ x, y }) => x < y;
 const letter = ({ characterCode }) => ({
-    "L": combined(
-        positioned({ beginning: { x: 0, y: 0 }, end: { x: 1 / 3, y: 1 }, renderer: filled() }),
-        positioned({ beginning: { x: 0, y: 2 / 3 }, end: { x: 1, y: 1 }, renderer: filled() }),
-    ),
+    "L": carved({
+        renderer: filled(),
+        carver: positioned({ beginning: { x: 1 / 3, y: 0 }, end: { x: 1, y: 2 / 3 }, renderer: filled() })
+    }),
     "O": carved({
         renderer: circle(),
         carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
     }),
-    "A": (() => {
-        let slopeLine = () => carved({
-            renderer: slope(),
-            carver: positioned({ beginning: { x: 0, y: 1 / 3 }, end: { x: 2 / 3, y: 1 }, renderer: slope() })
-        });
-        return combined(
-            // Right
-            positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: withReversedX(slopeLine()) }),
-            // Left
-            positioned({ beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: slopeLine() }),
-            // Middle connection
-            positioned({ beginning: { x: 0.2, y: 0.6 }, end: { x: 0.8, y: 0.8 }, renderer: filled() })
-        );
-    })(),
+    "A": combined(
+        // Right
+        positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: withReversedX(slope({ thickness: 1 / 3 })) }),
+        // Left
+        positioned({ beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: slope({ thickness: 1 / 3 }) }),
+        // Middle connection
+        positioned({ beginning: { x: 0.2, y: 0.6 }, end: { x: 0.8, y: 0.8 }, renderer: filled() })
+    ),
     "D": combined(
         // Right arch
         positioned({
@@ -131,14 +126,22 @@ const letter = ({ characterCode }) => ({
             positioned({ beginning: { x: 0, y: 0.4375 }, end: { x: 1, y: 1 }, renderer: half() }),
         );
     })(),
-    "H": combined(
-        // Left line
-        positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.25, y: 1 }, renderer: filled() }),
-        // Right line
-        positioned({ beginning: { x: 0.75, y: 0 }, end: { x: 1, y: 1 }, renderer: filled() }),
-        // Middle line
-        positioned({ beginning: { x: 0, y: 0.4 }, end: { x: 1, y: 0.6 }, renderer: filled() }),
-    ),
+    "H": carved({
+        renderer: filled(),
+        carver: combined(
+            // Upper cut
+            positioned({ beginning: { x: 0.25, y: 0 }, end: { x: 0.75, y: 0.4 }, renderer: filled() }),
+            // Lower cut
+            positioned({ beginning: { x: 0.25, y: 0.6 }, end: { x: 0.75, y: 1 }, renderer: filled() }),
+        ),
+    }),
+    "N": carved({
+        renderer: filled(),
+        carver: combined(
+            positioned({ beginning: { x: 0.25, y: 0 }, end: { x: 0.75, y: 2/3 }, renderer: withReversedX(withReversedY(slope({ thickness: Infinity }))) }),
+            positioned({ beginning: { x: 0.25, y: 1/3 }, end: { x: 0.75, y: 1 }, renderer: slope({ thickness: Infinity }) }),
+        ),
+    }),
 }[characterCode] || questionMark());
 const partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
