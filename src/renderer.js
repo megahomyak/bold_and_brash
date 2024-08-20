@@ -36,8 +36,8 @@ const carved = ({ renderer, carver }) => coordinates => renderer(coordinates) &&
 // Beginning and end are { x: [0; 1], y: [0; 1] }
 // Input requirements: beginning.x < end.x; beginning.y < end.y
 const positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
-    x >= beginning.x && x < end.x
-    && y >= beginning.y && y < end.y
+    x >= beginning.x && x <= end.x
+    && y >= beginning.y && y <= end.y
     && renderer({
         x: (x - beginning.x) / (end.x - beginning.x),
         y: (y - beginning.y) / (end.y - beginning.y),
