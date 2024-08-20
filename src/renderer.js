@@ -1,46 +1,64 @@
 let canvas = document.getElementsByTagName("canvas")[0];
 let ctx = canvas.getContext("2d");
 
-function debug() {
-    console.log(...arguments);
-    throw "debug throw";
-}
-class Accumulator {
-    constructor() {
-        this.min = Infinity;
-        this.max = -Infinity;
-    }
-    accumulate(number) {
-        if (this.max < number) {
-            this.max = number;
-        }
-        if (this.min > number) {
-            this.min = number;
-        }
-    }
+let debug = {
     print() {
-        console.log(this.min, this.max);
+        console.log(...arguments);
+        throw "debug throw";
+    },
+    BoundChecker() {
+        return {
+            min: Infinity,
+            max: -Infinity,
+            register(number) {
+                if (this.max < number) {
+                    this.max = number;
+                }
+                if (this.min > number) {
+                    this.min = number;
+                }
+            },
+            print() {
+                console.log(this.min, this.max);
+            }
+        }
     }
-}
-
-let distanceAccum = new Accumulator();
+};
 
 // { x, y } are all in [0; 1]
 
 function distance(point1, point2) {
-    distanceAccum.accumulate(point1.x);
     return Math.hypot(point2.x - point1.x, point2.y - point1.y);
 }
 
-let rectangle = () => ({ x: _x, y: _y }) => true;
-// CIRCLE IS BUGGY! CROPPED ON THE RIGHT!
+let combined = (...renderers) => ({ x, y }) => renderers.map(renderer => renderer({ x, y })).some(result => result);
+let carved = ({ renderer, carver }) => ({ x, y }) => renderer({ x, y }) && !carver({ x, y });
+// Beginning and end are { x: [0; 1], y: [0; 1] }
+// Input requirements: beginning.x < end.x; beginning.y < end.y
+let positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
+    x >= beginning.x && x < end.x
+    && y >= beginning.y && y < end.y
+    && renderer({
+        x: (x - beginning.x) / (end.x - beginning.x),
+        y: (y - beginning.y) / (end.y - beginning.y),
+    })
+);
+let filled = () => ({ x: _x, y: _y }) => true;
 let circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
+let questionMark = () => combined(
+    positioned({ beginning: { x: 0.4, y: 0.8 }, end: { x: 0.6, y: 1 }, renderer: filled() }),
+    carved({
+        renderer: positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.6 }, renderer: circle() }),
+        carver: combined(
+            positioned({ beginning: { x: 0.2, y: 0.1 }, end: { x: 0.8, y: 0.5 }, renderer: circle() }),
+            positioned({ beginning: { x: 0, y: 0.3 }, end: { x: 0.5, y: 0.6 }, renderer: filled() })
+        ),
+    }),
+    positioned({ beginning: { x: 0.4, y: 0.5 }, end: { x: 0.6, y: 0.7 }, renderer: filled() }),
+);
 let letter = ({ characterCode }) => ({
 
-}[characterCode] || (
-        /* Rendering a question mark */
-        circle()
-    ));
+}[characterCode] || questionMark());
 let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
     let leftmostGap = partGap / partAmount;
@@ -91,7 +109,6 @@ function render() {
                 }
             }
         }
-        distanceAccum.print();
     }
 }
 
