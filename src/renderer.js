@@ -46,15 +46,20 @@ let positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
 let filled = () => ({ x: _x, y: _y }) => true;
 let circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
 let questionMark = () => combined(
-    positioned({ beginning: { x: 0.4, y: 0.8 }, end: { x: 0.6, y: 1 }, renderer: filled() }),
+    // Lower dot
+    positioned({ beginning: { x: 0.4, y: 0.825 }, end: { x: 0.6, y: 1 }, renderer: filled() }),
+    // Upper part circle
     carved({
         renderer: positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.6 }, renderer: circle() }),
         carver: combined(
-            positioned({ beginning: { x: 0.2, y: 0.1 }, end: { x: 0.8, y: 0.5 }, renderer: circle() }),
+            // Hole in circle
+            positioned({ beginning: { x: 0.25, y: 0.15 }, end: { x: 0.75, y: 0.45 }, renderer: circle() }),
+            // Bottom left rectangle cut
             positioned({ beginning: { x: 0, y: 0.3 }, end: { x: 0.5, y: 0.6 }, renderer: filled() })
         ),
     }),
-    positioned({ beginning: { x: 0.4, y: 0.5 }, end: { x: 0.6, y: 0.7 }, renderer: filled() }),
+    // Circle down stem
+    positioned({ beginning: { x: 0.4, y: 0.45 }, end: { x: 0.6, y: 0.7 }, renderer: filled() }),
 );
 let letter = ({ characterCode }) => ({
 
