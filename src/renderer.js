@@ -47,17 +47,14 @@ let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     // Shifting the coordinate to after the leftmost gap before doing any processing
     coordinate = leftmostGap + coordinate * (1 - leftmostGap);
     let partIndex = Math.floor(coordinate * partAmount);
+    if (partIndex == partAmount) partIndex--;
     let partLength = 1 / partAmount;
     let partBias = partIndex * partLength;
-    if (coordinate >= 0.3) {
-        debug(coordinate, partBias, partLength);
-    }
     // Getting the coordinate inside the part
-    // THIS CONVERSION SHRINKS THE UPPER BOUND
-    coordinate = (coordinate - partBias) / partLength;
+    coordinate = (coordinate - partBias) * partAmount;
     if (coordinate < partGap) { return false; }
     // Getting the coordinate without part gap
-    coordinate = (coordinate - partGap) * (1 + partGap);
+    coordinate = (coordinate - partGap) / (1 - partGap);
     return renderer({ partIndex, coordinate });
 };
 let partitionedHorizontally = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: x, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x: coordinate, y }) });
@@ -65,6 +62,7 @@ let partitionedVertically = ({ partAmount, partGap, renderer }) => ({ x, y }) =>
 let line = ({ line, characterGap }) => partitionedHorizontally({ partAmount: line.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: line[partIndex] }) });
 let lines = ({ lines, lineGap, characterGap }) => partitionedVertically({ partAmount: lines.length, partGap: lineGap, renderer: ({ partIndex }) => line({ line: lines[partIndex], characterGap }) });
 let canvasImage = lines({ lines: ["BOLD", "AND", "BRASH"], lineGap: 0.2, characterGap: 0.2 });
+//let canvasImage = circle();
 
 function render() {
     let widthPx, heightPx;
