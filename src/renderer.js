@@ -8,53 +8,42 @@ function debug() {
 
 // { x, y } are all in [0; 1)
 
-// beginning's values shouldn't be greater than the corresponding values of end
-let compressed = ({ beginning, end, renderer }) => ({ x, y }) => (
-    x >= beginning.x && x < end.x
-    && y >= beginning.y && y < end.y
-    && renderer({
-        x: (x - beginning.x) / (end.x - beginning.x),
-        y: (y - beginning.y) / (end.y - beginning.y),
-    })
-);
+function distance(point1, point2) {
+    return Math.hypot(point2.x - point1.x, point2.y - point1.y);
+}
 
-let limitX = ({ beginning, end, renderer }) => ({ x, y }) => renderer({ x: (beginning + x * (1 - beginning)) * end, y });
-
-let circle = () => {
-    function distance(point1, point2) {
-        return Math.hypot(point2.x - point1.x, point2.y - point1.y);
-    }
-    return ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
-};
-
+let circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
 let letter = ({ characterCode }) => ({
 
-}[characterCode] || (({ x, y }) => {
-    // Rendering a question mark
-    return circle()({ x, y });
-}));
-
-function partitionedHorizontally({ partAmount, partGap, renderer }) {
-    return ({ x, y }) => {
-        if (partAmount == 0) {
-            return false;
-        }
-        let partIndex = Math.floor(x * partAmount);
-        let compressedGap = partGap / partAmount;
-        return limitX({ beginning: compressedGap, end: 1, renderer: compressed({ beginning: { x: partGap, y: 0 }, end: { x: 1, y: 1 }, renderer: renderer({ partIndex }) }) })({ x, y });
-    };
-}
-
-function line({ gap, characters }) {
-    return partitionedHorizontally({ partAmount: characters.length, partGap: gap, renderer: ({ partIndex }) => circle() });
-    return partitionedHorizontally({
-        partAmount: characters.length, partGap: gap, renderer: ({ partIndex }) => {
-            return letter({ characterCode: characters[partIndex] });
-        }
-    });
-}
-
-let canvasImage = () => line({ characters: "BOLD", gap: 0.2 });
+}[characterCode] || (
+        /* Rendering a question mark */
+        circle()
+    ));
+let partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
+    if (partAmount == 0) { return false; }
+    let leftmostGap = partGap / partAmount;
+    let a = coordinate;
+    // Shifting the coordinate to after the leftmost gap before doing any processing
+    coordinate = leftmostGap + coordinate * (1 - leftmostGap);
+    // BUG AFTER THIS COMMENT, EVERYTHING IS CORRECT BEFORE THIS LINE
+    let partIndex = Math.floor(coordinate / partAmount);
+    let partLength = 1 / partAmount;
+    let partBias = partIndex * partLength;
+    let coordinateInsidePart = (coordinate - partBias) / partLength;
+    if (coordinateInsidePart < partGap) { return false; }
+    let coordinateWithoutPartGap = (coordinateInsidePart - partGap) * (1 + partGap);
+    if (coordinate >= 0.5) {
+        debug(partBias, coordinateInsidePart, coordinateAfterLeftmostGap, partBias, partLength);
+        debug(coordinate, coordinateAfterLeftmostGap, coordinateInsidePart, coordinateWithoutPartGap);
+    }
+    return renderer({ partIndex, coordinate: coordinateWithoutPartGap });
+};
+let partitionedHorizontally = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: x, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x: coordinate, y }) });
+let partitionedVertically = ({ partAmount, partGap, renderer }) => ({ x, y }) => partitioned({ coordinate: y, partAmount, partGap, renderer: ({ partIndex, coordinate }) => renderer({ partIndex })({ x, y: coordinate }) });
+let line = ({ characters, characterGap }) => partitionedHorizontally({ partAmount: characters.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: characters[partIndex] }) });
+let lines = ({ characters, lineGap, characterGap }) => partitionedVertically({ partAmount: characters.length, partGap: characterGap, renderer: ({ partIndex }) => letter({ characterCode: characters[partIndex] }) });
+// let canvasImage = lines({ characters: ["BOLD", "AND", "BRASH"], lineGap: 0.2, characterGap: 0.2 });
+let canvasImage = partitionedHorizontally({ partAmount: 4, partGap: 0.2, renderer: ({ partIndex }) => circle() });
 
 function render() {
     let widthPx, heightPx;
@@ -78,7 +67,7 @@ function render() {
             for (let y = 0; y < heightPx; ++y) {
                 let xUnit = x / widthPx;
                 let yUnit = y / heightPx;
-                if (canvasImage()({ x: xUnit, y: yUnit })) {
+                if (canvasImage({ x: xUnit, y: yUnit })) {
                     ctx.fillRect(x, y, 1, 1);
                 }
             }
