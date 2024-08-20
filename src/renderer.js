@@ -46,7 +46,10 @@ const positioned = ({ beginning, end, renderer }) => ({ x, y }) => (
 const withReversedX = renderer => ({ x, y }) => renderer({ x: 1 - x, y });
 const withReversedY = renderer => ({ x, y }) => renderer({ x, y: 1 - y });
 const filled = () => ({ x: _x, y: _y }) => true;
-const circle = () => ({ x, y }) => distance({ x, y }, { x: 0.5, y: 0.5 }) <= 0.5;
+const circle = ({ thickness }) => ({ x, y }) => {
+    let dist = distance({ x, y }, { x: 0.5, y: 0.5 });
+    return thickness <= dist && dist <= 0.5;
+}
 const slope = ({ thickness }) => ({ x, y }) => x < y && y - x <= thickness;
 // Beginning and end are { x: number, y: number }
 // Input requirements: beginning.x < end.x; beginning.y < end.y
@@ -56,11 +59,9 @@ const questionMark = () => combined(
     positioned({ beginning: { x: 0.4, y: 0.825 }, end: { x: 0.6, y: 1 }, renderer: filled() }),
     // Upper part circle
     carved({
-        renderer: positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.6 }, renderer: circle() }),
+        renderer: positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.6 }, renderer: circle({ thickness: 0.25 }) }),
         carver: combined(
-            // Hole in circle
-            positioned({ beginning: { x: 0.25, y: 0.15 }, end: { x: 0.75, y: 0.45 }, renderer: circle() }),
-            // Bottom left rectangle cut
+            // Bottom left rectangular cut
             positioned({ beginning: { x: 0, y: 0.3 }, end: { x: 0.5, y: 0.6 }, renderer: filled() })
         ),
     }),
@@ -72,10 +73,7 @@ const letter = ({ characterCode }) => ({
         renderer: filled(),
         carver: positioned({ beginning: { x: 1 / 3, y: 0 }, end: { x: 1, y: 2 / 3 }, renderer: filled() })
     }),
-    "O": carved({
-        renderer: circle(),
-        carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
-    }),
+    "O": circle({ thickness: 0.25 }),
     "A": combined(
         // Right
         positioned({ beginning: { x: 0, y: 0 }, end: { x: 0.5, y: 1 }, renderer: withReversedX(slope({ thickness: 1 / 3 })) }),
@@ -88,10 +86,7 @@ const letter = ({ characterCode }) => ({
         // Right arch
         positioned({
             beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: cropped({
-                beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: carved({
-                    renderer: circle(),
-                    carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
-                })
+                beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: circle({ thickness: 0.25 }),
             })
         }),
         // Left top line
@@ -106,10 +101,7 @@ const letter = ({ characterCode }) => ({
             // Right arch
             positioned({
                 beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: cropped({
-                    beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: carved({
-                        renderer: circle(),
-                        carver: positioned({ beginning: { x: 0.25, y: 0.25 }, end: { x: 0.75, y: 0.75 }, renderer: circle() })
-                    })
+                    beginning: { x: 0.5, y: 0 }, end: { x: 1, y: 1 }, renderer: circle({ thickness: 0.25 }),
                 })
             }),
             // Left top line
@@ -121,9 +113,9 @@ const letter = ({ characterCode }) => ({
         );
         return combined(
             // Lower
-            positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.5625 }, renderer: half() }),
+            positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.5 + 0.25 / 2 / 2 }, renderer: half() }),
             // Higher
-            positioned({ beginning: { x: 0, y: 0.4375 }, end: { x: 1, y: 1 }, renderer: half() }),
+            positioned({ beginning: { x: 0, y: 0.5 - 0.25/2/2 }, end: { x: 1, y: 1 }, renderer: half() }),
         );
     })(),
     "H": carved({
@@ -138,10 +130,20 @@ const letter = ({ characterCode }) => ({
     "N": carved({
         renderer: filled(),
         carver: combined(
-            positioned({ beginning: { x: 0.25, y: 0 }, end: { x: 0.75, y: 2/3 }, renderer: withReversedX(withReversedY(slope({ thickness: Infinity }))) }),
-            positioned({ beginning: { x: 0.25, y: 1/3 }, end: { x: 0.75, y: 1 }, renderer: slope({ thickness: Infinity }) }),
+            positioned({ beginning: { x: 0.25, y: 0 }, end: { x: 0.75, y: 2 / 3 }, renderer: withReversedX(withReversedY(slope({ thickness: Infinity }))) }),
+            positioned({ beginning: { x: 0.25, y: 1 / 3 }, end: { x: 0.75, y: 1 }, renderer: slope({ thickness: Infinity }) }),
         ),
     }),
+    "S": combined(
+        // Upper part
+        carved({
+            renderer: positioned({ beginning: { x: 0, y: 0 }, end: { x: 1, y: 0.5625 }, renderer: circle({ thickness: 0.25 }) }),
+            carver: combined(
+                // Bottom right rectangular cut
+                positioned({ beginning: { x: 0.5, y: 0.25 }, end: { x: 1, y: 0.5625 }, renderer: filled() })
+            ),
+        }),
+    ),
 }[characterCode] || questionMark());
 const partitioned = ({ coordinate, partAmount, partGap, renderer }) => {
     if (partAmount == 0) { return false; }
