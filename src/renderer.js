@@ -31,7 +31,12 @@ function distance(point1, point2) {
     return Math.hypot(point2.x - point1.x, point2.y - point1.y);
 }
 
+const lineThickness = 0.2;
+
 const combined = (...renderers) => coordinates => renderers.map(renderer => renderer(coordinates)).some(result => result);
+// Beginning and end are { x: number, y: number }
+// Input requirements: beginning.x < end.x; beginning.y < end.y
+const horizontalLine = ({ beginning, end }) => ({ x, y }) => ;
 const carved = ({ renderer, carver }) => coordinates => renderer(coordinates) && !carver(coordinates);
 // Beginning and end are { x: number, y: number }
 // Input requirements: beginning.x < end.x; beginning.y < end.y
